@@ -139,6 +139,25 @@ const total = sorted.length;
     if (e.key === 'ArrowLeft') showAt(cursor - 1);
     if (e.key === 'ArrowRight') showAt(cursor + 1);
   });
+
+  // ─── Background prefetch for hidden collections ─────────────────────
+  // Lazy-loaded images in display:none cells aren't fetched by the browser,
+  // so switching chips used to show visible pop-in as each image loaded
+  // from scratch. Here we prime the HTTP cache for every photo once the
+  // page is idle; chip switches then feel instant.
+  const prefetchHidden = () => {
+    const imgs = document.querySelectorAll<HTMLImageElement>('.photo-cell img');
+    imgs.forEach((img) => {
+      if (img.complete && img.naturalWidth > 0) return;
+      // no-cors keeps same-origin image requests but doesn't block cross-origin
+      fetch(img.src, { mode: 'no-cors', credentials: 'omit' }).catch(() => {});
+    });
+  };
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(prefetchHidden, { timeout: 2000 });
+  } else {
+    window.addEventListener('load', () => setTimeout(prefetchHidden, 800));
+  }
 </script>
 
 <style>
