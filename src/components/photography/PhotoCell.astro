@@ -1,0 +1,88 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Image from '@components/Image.astro';
+
+interface Props {
+  entry: CollectionEntry<'photography'>;
+  index: number;
+}
+const { entry, index } = Astro.props;
+const { image, alt, title, caption, width, height, collection, preview_aspect } = entry.data;
+
+function collectionFromPath(p: string): string | null {
+  const m = p.match(/\/photography\/([^/]+)\//);
+  if (!m) return null;
+  return ['sport', 'landscape', 'nature', 'calle-en-cuadro', 'aerials'].includes(m[1]) ? m[1] : null;
+}
+const resolvedCollection = collection ?? collectionFromPath(image) ?? 'uncategorized';
+
+// Aspect ratio for the preview cell — uses `preview_aspect` override when
+// set, otherwise the photo's natural aspect. The image inside crops via
+// object-fit: cover when these differ; the lightbox shows the full image.
+const naturalAr = width && height ? width / height : 1;
+const ar = preview_aspect ?? naturalAr;
+const cellStyle = `--ar: ${ar.toFixed(4)}`;
+
+const lightboxCaption = title || caption || '';
+---
+
+<button
+  type="button"
+  class="photo-cell"
+  data-collection={resolvedCollection}
+  data-photo-index={index}
+  data-photo-src={image}
+  data-photo-alt={alt}
+  data-photo-caption={lightboxCaption}
+  title={entry.slug}
+  style={cellStyle}
+  aria-label={`Open ${alt}`}
+>
+  <Image src={image} alt={alt} class="photo-img" />
+</button>
+
+<style>
+  .photo-cell {
+    margin: 0 0 5px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    width: 100%;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    page-break-inside: avoid;
+    display: block;
+    border-radius: 2px;
+    overflow: hidden;
+    cursor: zoom-in;
+  }
+
+  .photo-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: var(--ar, auto);
+    object-fit: cover;
+    transition: opacity 200ms ease, transform 400ms ease;
+  }
+
+  .photo-cell:hover .photo-img {
+    transform: scale(1.02);
+  }
+</style>
+
+<style is:global>
+  /* Cross-component filter: hide non-matching photos so the multicolumn flow
+     reflows around just the matching set. Kept global so the parent
+     attribute selector reaches the cells. */
+  .mosaic-grid[data-active-collection]:not([data-active-collection='all']) .photo-cell {
+    display: none;
+  }
+  .mosaic-grid[data-active-collection='sport']           .photo-cell[data-collection='sport'],
+  .mosaic-grid[data-active-collection='landscape']       .photo-cell[data-collection='landscape'],
+  .mosaic-grid[data-active-collection='nature']          .photo-cell[data-collection='nature'],
+  .mosaic-grid[data-active-collection='calle-en-cuadro'] .photo-cell[data-collection='calle-en-cuadro'],
+  .mosaic-grid[data-active-collection='aerials']         .photo-cell[data-collection='aerials'] {
+    display: block;
+  }
+</style>

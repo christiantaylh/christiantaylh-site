@@ -1,0 +1,31 @@
+---
+interface Props {
+  active?: string;
+}
+const { active = 'all' } = Astro.props;
+---
+
+<div class="mosaic-grid" data-active-collection={active}>
+  <slot />
+</div>
+
+<style>
+  /* CSS multicolumn: cells flow column-by-column. Uniform widths, per-image
+     heights driven by natural aspect ratio. No gaps, no cropping. */
+  .mosaic-grid {
+    column-count: 3;
+    column-gap: 5px;
+  }
+
+  @media (max-width: 1023px) {
+    .mosaic-grid {
+      column-count: 2;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .mosaic-grid {
+      column-count: 2;
+    }
+  }
+</style>

@@ -1,0 +1,185 @@
+backend:
+  name: github
+  repo: christiantaylh/christiantaylh-site
+  branch: main
+  base_url: https://decapbridge.com
+  auth_endpoint: /auth
+
+# Enables `npx decap-server` for local CMS dev without GitHub OAuth.
+local_backend: true
+
+publish_mode: simple
+media_folder: "public/uploads"
+public_folder: "/uploads"
+
+site_url: https://christiantaylh.com
+display_url: https://christiantaylh.com
+logo_url: /uploads/site/avatar.jpg
+
+collections:
+  # ----------------------------------------------------------- SITE SETTINGS
+  - name: site
+    label: "Site Settings"
+    description: "Sidebar bio, tagline, socials, contact email."
+    files:
+      - name: general
+        label: "General"
+        file: "src/content/site/general.md"
+        fields:
+          - { name: name,    label: "Name",    widget: string }
+          - { name: title,   label: "Title",   widget: string, hint: "e.g. Filmmaker & Drone Specialist" }
+          - { name: bio,     label: "Bio",     widget: text, required: false }
+          - { name: tagline, label: "Tagline", widget: string, hint: "Shown under reel on home" }
+          - { name: avatar,  label: "Avatar / sidebar portrait", widget: image }
+          - { name: email,   label: "Contact email", widget: string }
+          - name: socials
+            label: "Socials"
+            widget: list
+            label_singular: "Social link"
+            fields:
+              - { name: label, label: "Label", widget: string, hint: "YouTube / Instagram / LinkedIn" }
+              - { name: url,   label: "URL",   widget: string }
+
+  # --------------------------------------------------------------- PORTFOLIO
+  - name: portfolio
+    label: "Portfolio (film & drone)"
+    label_singular: "Project"
+    folder: "src/content/portfolio"
+    create: true
+    delete: true
+    slug: "{{slug}}"
+    sortable_fields: ["year", "title"]
+    media_folder: "/public/uploads/portfolio/{{slug}}"
+    public_folder: "/uploads/portfolio/{{slug}}"
+    fields:
+      - { name: title,       label: "Title", widget: string }
+      - { name: headline,    label: "Headline", widget: string, required: false, hint: "One-line description shown under the title on the detail page." }
+      - { name: year,        label: "Year",  widget: number, value_type: int, min: 2000, max: 2100 }
+      - { name: date,        label: "Release date", widget: date, required: false, format: "YYYY-MM-DD", hint: "Optional. Used for ordering — leave blank to sort by year only." }
+      - { name: client,      label: "Client", widget: string, required: false }
+      - { name: thumbnail,   label: "Thumbnail", widget: image }
+      - { name: video_url,   label: "Video URL", widget: string, hint: "YouTube or Vimeo URL" }
+      - name: extra_videos
+        label: "Extra Videos"
+        label_singular: "Video"
+        widget: list
+        required: false
+        hint: "Optional additional videos embedded below the primary."
+        fields:
+          - { name: url,   label: "URL",   widget: string, hint: "YouTube or Vimeo URL" }
+          - { name: label, label: "Label", widget: string, required: false, hint: "Shown above the embed. e.g. Night 2." }
+      - { name: description, label: "Description", widget: text }
+      - { name: frames_label, label: "Stills section label", widget: string, required: false, hint: "Overrides the default 'Additional Frames' header for this entry." }
+      - { name: frames_intro, label: "Stills intro paragraph", widget: text, required: false, hint: "Optional paragraph shown above the stills grid (e.g. gear notes)." }
+      - { name: role,        label: "Role", widget: string, required: false, hint: "e.g. Director / DP / Drone Op" }
+      - name: category
+        label: "Category"
+        widget: select
+        required: false
+        options: ["Film", "Commercial", "Personal", "Live Event"]
+        hint: "Shown as a pill on hover. Used by the portfolio filter pills."
+      - { name: format, label: "Format (display label)", widget: string, required: false, hint: "Overrides Category in the page header line. e.g. Documentary, Music Video, Short Film." }
+      - name: equipment
+        label: "Equipment"
+        widget: select
+        multiple: true
+        required: false
+        options:
+          - "Sony A7V"
+          - "Sony A7 IV"
+          - "Sony A7 III"
+          - "Sony FX3"
+          - "Sony FX30"
+          - "DJI Mavic 3 Pro"
+          - "DJI Mavic 3 Pro Cine"
+          - "GEPRC Vapor D5"
+          - "GEPRC Darkstar 22"
+      - name: tags
+        label: "Tags"
+        widget: select
+        multiple: true
+        required: false
+        options:
+          - "Drone"
+          - "Cinematic"
+          - "Commercial"
+          - "Documentary"
+          - "Music Video"
+          - "Travel"
+          - "Real Estate"
+          - "Event"
+      - name: stills
+        label: "Stills (selected frames)"
+        label_singular: "Still"
+        widget: list
+        required: false
+        hint: "Optional gallery of stills shown below the credits. Click-to-lightbox enabled."
+        fields:
+          - { name: src,     label: "Image",   widget: image }
+          - { name: alt,     label: "Alt text", widget: string }
+          - { name: caption, label: "Caption", widget: string, required: false }
+
+  # ------------------------------------------------------------- PHOTOGRAPHY
+  - name: photography
+    label: "Photography"
+    label_singular: "Photo"
+    description: "One entry per photo. Move the image file into the matching collection subfolder under public/uploads/photography/ to control which filter chip shows it."
+    folder: "src/content/photography"
+    create: true
+    delete: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    sortable_fields: ["date", "title"]
+    media_folder: "/public/uploads/photography"
+    public_folder: "/uploads/photography"
+    fields:
+      - { name: image,   label: "Image", widget: image, hint: "Upload to the collection's subfolder (sport / landscape / calle-en-cuadro / aerials) to set its collection." }
+      - { name: alt,     label: "Alt text", widget: string, hint: "Required for accessibility." }
+      - { name: title,   label: "Title", widget: string, required: false }
+      - { name: caption, label: "Caption", widget: string, required: false }
+      - { name: date,    label: "Date taken", widget: date, required: false, format: "YYYY-MM-DD" }
+      - name: collection
+        label: "Collection"
+        widget: select
+        required: false
+        options: ["sport", "landscape", "nature", "calle-en-cuadro", "aerials"]
+        hint: "Usually auto-detected from the image's subfolder; set here only to override."
+      - { name: preview_aspect, label: "Preview aspect override", widget: number, value_type: float, required: false, hint: "Width / height for the thumbnail crop only (e.g. 0.75 = 3:4 portrait). Leave blank to use the photo's natural aspect. Lightbox always shows the full image." }
+
+  # ----------------------------------------------------------- TRAVEL JOURNAL
+  - name: travel-journal
+    label: "Travel Journal"
+    label_singular: "Destination"
+    folder: "src/content/travel-journal"
+    create: true
+    delete: true
+    slug: "{{slug}}"
+    sortable_fields: ["year", "title"]
+    media_folder: "/public/uploads/travel-journal/{{slug}}"
+    public_folder: "/uploads/travel-journal/{{slug}}"
+    fields:
+      - { name: title,      label: "Title",     widget: string,  hint: "e.g. Iceland" }
+      - { name: location,   label: "Location",  widget: string,  hint: "Country / region as displayed" }
+      - { name: year,       label: "Year",      widget: number,  value_type: int, min: 2000, max: 2100 }
+      - { name: order,      label: "Display order", widget: number, value_type: int, required: false, hint: "Lower = earlier on the index. Leave blank to sort by year/title automatically." }
+      - { name: hero_image, label: "Hero image", widget: image }
+      - { name: intro,      label: "Intro paragraph", widget: text, required: false }
+      - name: body
+        label: "Gallery body"
+        label_singular: "Block"
+        hint: "Interleave images and text in the order they should appear."
+        widget: list
+        types:
+          - name: image
+            label: "Image"
+            widget: object
+            summary: "{{fields.alt}}"
+            fields:
+              - { name: src,     label: "Image",   widget: image }
+              - { name: alt,     label: "Alt text", widget: string }
+              - { name: caption, label: "Caption", widget: string, required: false }
+          - name: text
+            label: "Text"
+            widget: object
+            summary: "{{fields.body}}"
+            fields:
+              - { name: body, label: "Text", widget: text }

@@ -1,0 +1,70 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import TravelTile from '@components/TravelTile.astro';
+
+// Continuous grid sorted year-desc. Mirrors the Adobe Portfolio source site
+// layout (christiantaylh.myportfolio.com) but at 3-4 columns instead of 2.
+const entries = (await getCollection('travel-journal')).sort((a, b) => {
+  // Primary: manual `order` field (lower first; missing = last).
+  const oa = a.data.order ?? Number.MAX_SAFE_INTEGER;
+  const ob = b.data.order ?? Number.MAX_SAFE_INTEGER;
+  if (oa !== ob) return oa - ob;
+  // Tiebreaker: year desc, then alpha.
+  if (b.data.year !== a.data.year) return b.data.year - a.data.year;
+  return a.data.title.localeCompare(b.data.title);
+});
+---
+
+<BaseLayout
+  title="Travel Journal"
+  description="Travel photography from around the world."
+>
+  <section class="px-6 md:px-12 pt-16 md:pt-20 pb-20">
+    <header class="mb-10 max-w-2xl">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-[var(--color-fg-dim)] mb-3">
+        Travel Journal
+      </p>
+      <h1 class="font-display text-4xl md:text-5xl leading-[1.05]">
+        A photographic record of places.
+      </h1>
+    </header>
+
+    {entries.length === 0 ? (
+      <p class="text-sm text-[var(--color-fg-muted)]">
+        No destinations yet. Add them via <a href="/admin" class="underline">/admin</a>.
+      </p>
+    ) : (
+      <div class="travel-grid">
+        {entries.map((entry) => (
+          <TravelTile
+            href={`/travel-journal/${entry.slug}`}
+            title={entry.data.title}
+            location={entry.data.location}
+            year={entry.data.year}
+            hero={entry.data.hero_image}
+          />
+        ))}
+      </div>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .travel-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 1023px) {
+    .travel-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  @media (max-width: 767px) {
+    .travel-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+  }
+</style>

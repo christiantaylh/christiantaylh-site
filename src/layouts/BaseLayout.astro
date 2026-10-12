@@ -1,0 +1,64 @@
+---
+import '../styles/global.css';
+import Sidebar from '@components/Sidebar.astro';
+import MobileNav from '@components/MobileNav.astro';
+import GrainOverlay from '@components/GrainOverlay.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+}
+
+const { title, description, ogImage } = Astro.props;
+const fullTitle =
+  title === 'Christian Taylhardat' ? title : `${title} — Christian Taylhardat`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <meta property="og:title" content={fullTitle} />
+    {description && <meta property="og:description" content={description} />}
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    <meta name="theme-color" content="#0c0c0e" />
+
+    {/* Type pairing #1: Fraunces + Inter */}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@400..700&family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..700,30..100;1,9..144,300..700,30..100&family=Inter:wght@100..700&display=swap"
+    />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+
+  <body class="antialiased">
+    <Sidebar />
+    <MobileNav />
+
+    <main class="md:ml-64 lg:ml-72 pt-16 md:pt-0 min-h-screen">
+      <slot />
+    </main>
+
+    <GrainOverlay />
+
+    {/* Roll the copyright year forward client-side so it updates the moment a
+        visitor loads the page after Jan 1, even if the site hasn't been
+        rebuilt. Build-time render in the markup is the fallback. */}
+    <script is:inline>
+      (function () {
+        var now = new Date().getFullYear();
+        document.querySelectorAll('.js-copyright-year').forEach(function (el) {
+          var start = parseInt(el.getAttribute('data-start'), 10);
+          el.textContent = now > start ? start + '-' + now : String(start);
+        });
+      })();
+    </script>
+  </body>
+</html>

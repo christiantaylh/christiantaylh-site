@@ -1,0 +1,40 @@
+---
+/**
+ * Site-wide film-grain overlay.
+ *
+ * SVG fractal noise rendered once and tiled. Fixed-position, pointer-events-none,
+ * blend-overlay. Roughly 2-3% perceived intensity — present but subliminal.
+ *
+ * Drop this into BaseLayout once and forget about it.
+ */
+---
+
+<svg
+  aria-hidden="true"
+  class="grain-overlay pointer-events-none fixed inset-0 z-[60] h-full w-full opacity-[0.05] mix-blend-overlay"
+>
+  <filter id="grain-noise">
+    <feTurbulence
+      type="fractalNoise"
+      baseFrequency="0.9"
+      numOctaves="2"
+      stitchTiles="stitch"
+    />
+    <feColorMatrix
+      type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0.6 0"
+    />
+  </filter>
+  <rect width="100%" height="100%" filter="url(#grain-noise)" />
+</svg>
+
+<style>
+  /* Slightly stronger on dark backgrounds is OK; lower on light surfaces.
+     Respect reduced-motion by killing any future grain animation. */
+  @media (prefers-reduced-motion: reduce) {
+    .grain-overlay { animation: none !important; }
+  }
+</style>

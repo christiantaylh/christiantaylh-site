@@ -1,0 +1,46 @@
+---
+import { youtubeEmbedUrl, youtubeThumbnail } from '@lib/video';
+
+interface Props {
+  videoId: string;
+  title?: string;
+}
+
+const { videoId, title = 'Reel' } = Astro.props;
+const poster = youtubeThumbnail(videoId);
+const embed = youtubeEmbedUrl(videoId, true);
+---
+
+<section class="relative aspect-video w-full overflow-hidden bg-black">
+  {/* Mobile: poster only */}
+  <img
+    src={poster}
+    alt={title}
+    class="absolute inset-0 h-full w-full object-cover md:hidden"
+    loading="eager"
+    decoding="async"
+    fetchpriority="high"
+  />
+
+  {/* Desktop: autoplay muted reel with poster as fallback while iframe loads */}
+  <div class="hidden md:block absolute inset-0">
+    <img
+      src={poster}
+      alt=""
+      aria-hidden="true"
+      class="absolute inset-0 h-full w-full object-cover"
+      loading="eager"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <iframe
+      src={embed}
+      title={title}
+      class="absolute inset-0 h-full w-full"
+      frameborder="0"
+      allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+      allowfullscreen
+      loading="eager"
+    />
+  </div>
+</section>

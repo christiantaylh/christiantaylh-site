@@ -1,0 +1,37 @@
+---
+import {
+  parseVideoUrl,
+  youtubeEmbedUrl,
+  vimeoEmbedUrl,
+} from '@lib/video';
+
+interface Props {
+  url: string;
+  title?: string;
+  autoplay?: boolean;
+  class?: string;
+}
+
+const { url, title = 'Video', autoplay = false, class: className } = Astro.props;
+const parsed = parseVideoUrl(url);
+
+let embed: string | null = null;
+if (parsed.provider === 'youtube') embed = youtubeEmbedUrl(parsed.id, autoplay);
+if (parsed.provider === 'vimeo') embed = vimeoEmbedUrl(parsed.id, autoplay);
+---
+
+{embed ? (
+  <div class:list={['relative aspect-video w-full overflow-hidden bg-black', className]}>
+    <iframe
+      src={embed}
+      title={title}
+      class="absolute inset-0 h-full w-full"
+      frameborder="0"
+      allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+      allowfullscreen
+      loading="lazy"
+    />
+  </div>
+) : (
+  <a href={url} class="text-[var(--color-fg-muted)] underline">{url}</a>
+)}

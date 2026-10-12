@@ -1,0 +1,143 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import VideoEmbed from '@components/VideoEmbed.astro';
+import StillsGallery from '@components/StillsGallery.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('portfolio');
+  return entries.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+interface Props {
+  entry: CollectionEntry<'portfolio'>;
+}
+
+const { entry } = Astro.props;
+const {
+  title,
+  headline,
+  year,
+  client,
+  video_url,
+  extra_videos,
+  description,
+  role,
+  equipment,
+  tags,
+  category,
+  format,
+  stills,
+  frames_label,
+  frames_intro,
+} = entry.data;
+
+const kicker = [year, format ?? category, client].filter(Boolean).join(' · ');
+
+// Build credits rows — only include sections that have content.
+type Row = { label: string; value: string };
+const credits: Row[] = [];
+if (role) credits.push({ label: 'Role', value: role });
+if (client) credits.push({ label: 'Client', value: client });
+if (equipment.length) credits.push({ label: 'Equipment', value: equipment.join(' · ') });
+if (tags.length) credits.push({ label: 'Tags', value: tags.join(' · ') });
+---
+
+<BaseLayout title={title} description={description}>
+  <article class="px-6 md:px-12 pt-16 md:pt-20 pb-24">
+
+    {/* Title block — centered, film-poster scale */}
+    <header
+      class="text-center mb-12 md:mb-16 rise"
+      style="--rise-delay: 0ms"
+    >
+      <p class="text-[10px] md:text-xs uppercase tracking-[0.3em] text-[var(--color-fg-muted)] mb-5 md:mb-6 font-mono">
+        {kicker}
+      </p>
+      <h1
+        class="uppercase text-3xl md:text-5xl lg:text-6xl leading-[1] tracking-wide max-w-[18ch] mx-auto"
+        style="font-family: var(--font-impact)"
+      >
+        {title}
+      </h1>
+      {headline && (
+        <p class="mt-6 max-w-prose mx-auto font-display italic text-base md:text-lg text-[var(--color-fg-muted)] leading-snug">
+          {headline}
+        </p>
+      )}
+    </header>
+
+    {/* Video(s) — centered, capped to a sane max width */}
+    <div
+      class="max-w-5xl mx-auto mb-16 md:mb-20 rise space-y-10 md:space-y-12"
+      style="--rise-delay: 150ms"
+    >
+      <VideoEmbed url={video_url} title={title} />
+      {extra_videos.map((v) => (
+        <div>
+          {v.label && (
+            <p class="text-[10px] uppercase tracking-[0.3em] text-[var(--color-fg-muted)] font-mono text-center mb-4">
+              {v.label}
+            </p>
+          )}
+          <VideoEmbed url={v.url} title={v.label ?? title} />
+        </div>
+      ))}
+    </div>
+
+    {/* Description - editorial serif, centered to match the video width.
+        Splits on blank lines so multi-paragraph descriptions read as proper prose. */}
+    {description && (
+      <div
+        class="max-w-5xl mx-auto mb-16 md:mb-20 rise space-y-5 md:space-y-6"
+        style="--rise-delay: 300ms"
+      >
+        {description.split(/\n\s*\n+/).map((para) => (
+          <p class="font-display text-lg md:text-xl leading-relaxed text-[var(--color-fg)]/90">
+            {para.trim()}
+          </p>
+        ))}
+      </div>
+    )}
+
+    {/* Stills — selected frames, click-to-lightbox */}
+    {stills.length > 0 && (
+      <div class="rise" style="--rise-delay: 400ms">
+        <StillsGallery stills={stills} label={frames_label} intro={frames_intro} />
+      </div>
+    )}
+
+    {/* Credits — spec-sheet style at the bottom */}
+    {credits.length > 0 && (
+      <div
+        class="max-w-2xl mx-auto pt-8 md:pt-10 border-t hairline border-t-[var(--color-line)] rise"
+        style="--rise-delay: 450ms"
+      >
+        <dl class="grid grid-cols-[max-content_1fr] gap-x-8 gap-y-3 text-sm">
+          {credits.map((row) => (
+            <>
+              <dt class="text-[10px] uppercase tracking-[0.2em] text-[var(--color-fg-dim)] pt-[2px]">
+                {row.label}
+              </dt>
+              <dd class="text-[var(--color-fg)]">{row.value}</dd>
+            </>
+          ))}
+        </dl>
+      </div>
+    )}
+
+    {/* Back link */}
+    <div class="text-center mt-20 md:mt-24 rise" style="--rise-delay: 600ms">
+      <a
+        href="/portfolio"
+        class="text-xs uppercase tracking-[0.3em] text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
+      >
+        ← All work
+      </a>
+    </div>
+
+  </article>
+</BaseLayout>

@@ -1,0 +1,63 @@
+---
+import Image from './Image.astro';
+
+interface Props {
+  href: string;
+  title: string;
+  year: number;
+  client?: string;
+  category?: 'Film' | 'Commercial' | 'Personal' | 'Live Event';
+  thumbnail: string;
+}
+
+const { href, title, year, client, category, thumbnail } = Astro.props;
+---
+
+<a
+  href={href}
+  class="group relative block aspect-video overflow-hidden bg-[var(--color-bg-elev)]"
+>
+  {/* Thumbnail — gentle zoom on hover */}
+  <Image
+    src={thumbnail}
+    alt={title}
+    class="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]"
+  />
+
+  {/* Default state — small bottom title strip with year, fades on hover */}
+  <div
+    class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/85 via-black/40 to-transparent transition-opacity duration-500 group-hover:opacity-0"
+  >
+    <div class="flex items-baseline justify-between gap-3">
+      <h3
+        class="text-lg uppercase tracking-wider text-white truncate"
+        style="font-family: var(--font-impact)"
+      >
+        {title}
+      </h3>
+      <span class="text-xs text-white/70 tabular-nums shrink-0">{year}</span>
+    </div>
+    {client && (
+      <p class="text-xs text-white/60 mt-1 truncate">{client}</p>
+    )}
+  </div>
+
+  {/* Hover overlay — centered title + category pill */}
+  <div
+    class="absolute inset-0 flex flex-col items-center justify-center text-center px-6 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+  >
+    <h3
+      class="uppercase text-2xl md:text-4xl leading-[1] tracking-wide text-white max-w-[95%] translate-y-2 group-hover:translate-y-0 transition-transform duration-500 delay-100"
+      style="font-family: var(--font-impact)"
+    >
+      {title}
+    </h3>
+    {category && (
+      <span
+        class="mt-4 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-[11px] uppercase tracking-[0.18em] translate-y-2 group-hover:translate-y-0 transition-transform duration-500 delay-200"
+      >
+        {category}
+      </span>
+    )}
+  </div>
+</a>

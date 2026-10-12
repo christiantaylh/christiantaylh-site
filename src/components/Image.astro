@@ -1,0 +1,43 @@
+---
+/**
+ * The single image component for the site.
+ * Currently just renders a plain <img>. When we move to a CDN later,
+ * this is the only file that changes — every other component imports
+ * from here.
+ */
+interface Props {
+  src: string;
+  alt: string;
+  class?: string;
+  style?: string;
+  width?: number;
+  height?: number;
+  loading?: 'lazy' | 'eager';
+  decoding?: 'async' | 'sync' | 'auto';
+  fetchpriority?: 'high' | 'low' | 'auto';
+}
+
+const {
+  src,
+  alt,
+  class: className,
+  style,
+  width,
+  height,
+  loading = 'lazy',
+  decoding = 'async',
+  fetchpriority,
+} = Astro.props;
+---
+
+<img
+  src={src}
+  alt={alt}
+  class={className}
+  style={style}
+  width={width}
+  height={height}
+  loading={loading}
+  decoding={decoding}
+  fetchpriority={fetchpriority}
+/>

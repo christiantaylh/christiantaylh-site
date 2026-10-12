@@ -1,0 +1,145 @@
+---
+import Image from './Image.astro';
+
+interface Still {
+  src: string;
+  alt: string;
+  caption?: string;
+}
+
+interface Props {
+  stills: Still[];
+  label?: string;
+  intro?: string;
+}
+
+const { stills, label, intro } = Astro.props;
+---
+
+{stills.length > 0 && (
+  <section class="max-w-4xl mx-auto mt-20 md:mt-24">
+    <p class="text-[10px] uppercase tracking-[0.3em] text-[var(--color-fg-muted)] font-mono text-center mb-6 md:mb-8">
+      {label ?? 'Additional Frames'}
+    </p>
+    {intro && (
+      <p class="font-display text-base md:text-lg leading-relaxed text-[var(--color-fg)]/85 text-center max-w-prose mx-auto mb-8 md:mb-10">
+        {intro}
+      </p>
+    )}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-2">
+      {stills.map((still, i) => (
+        <button
+          type="button"
+          class="group relative block aspect-video overflow-hidden bg-[var(--color-bg-elev)] cursor-zoom-in"
+          data-stills-trigger
+          data-index={i}
+          data-src={still.src}
+          data-alt={still.alt}
+          data-caption={still.caption ?? ''}
+        >
+          <Image
+            src={still.src}
+            alt={still.alt}
+            class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+          />
+        </button>
+      ))}
+    </div>
+
+    {/* Lightbox dialog */}
+    <dialog
+      id="stills-lightbox"
+      class="bg-[var(--color-bg)]/95 backdrop-blur text-[var(--color-fg)] m-0 max-w-none w-screen h-screen p-0 backdrop:bg-black/80"
+    >
+      <div class="relative flex h-full w-full items-center justify-center p-6 md:p-12">
+        <button
+          type="button"
+          id="stills-lightbox-close"
+          aria-label="Close"
+          class="absolute top-5 right-5 p-2 text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25">
+            <line x1="6" y1="6" x2="18" y2="18" />
+            <line x1="18" y1="6" x2="6" y2="18" />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          id="stills-lightbox-prev"
+          aria-label="Previous"
+          class="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 p-3 text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
+        >
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.25">
+            <polyline points="17,4 7,14 17,24" />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          id="stills-lightbox-next"
+          aria-label="Next"
+          class="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 p-3 text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
+        >
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.25">
+            <polyline points="11,4 21,14 11,24" />
+          </svg>
+        </button>
+
+        <figure class="max-h-full max-w-[90vw] flex flex-col items-center gap-4">
+          <img id="stills-lightbox-img" src="" alt="" class="max-h-[80vh] max-w-full object-contain" />
+          <figcaption id="stills-lightbox-caption" class="text-xs text-[var(--color-fg-muted)] text-center"></figcaption>
+        </figure>
+      </div>
+    </dialog>
+  </section>
+)}
+
+<script>
+  const triggers = document.querySelectorAll<HTMLElement>('[data-stills-trigger]');
+  const dialog = document.getElementById('stills-lightbox') as HTMLDialogElement | null;
+  const imgEl = document.getElementById('stills-lightbox-img') as HTMLImageElement | null;
+  const capEl = document.getElementById('stills-lightbox-caption');
+  const closeBtn = document.getElementById('stills-lightbox-close');
+  const prevBtn = document.getElementById('stills-lightbox-prev');
+  const nextBtn = document.getElementById('stills-lightbox-next');
+
+  if (dialog && imgEl && capEl && triggers.length) {
+    const items = Array.from(triggers).map((t) => ({
+      src: t.dataset.src ?? '',
+      alt: t.dataset.alt ?? '',
+      caption: t.dataset.caption ?? '',
+    }));
+    let current = 0;
+
+    const show = (i: number) => {
+      current = (i + items.length) % items.length;
+      const item = items[current];
+      imgEl.src = item.src;
+      imgEl.alt = item.alt;
+      capEl.textContent = item.caption;
+    };
+
+    triggers.forEach((t) => {
+      t.addEventListener('click', () => {
+        show(Number(t.dataset.index ?? 0));
+        dialog.showModal();
+      });
+    });
+
+    closeBtn?.addEventListener('click', () => dialog.close());
+    prevBtn?.addEventListener('click', () => show(current - 1));
+    nextBtn?.addEventListener('click', () => show(current + 1));
+
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!dialog.open) return;
+      if (e.key === 'ArrowLeft') show(current - 1);
+      if (e.key === 'ArrowRight') show(current + 1);
+    });
+  }
+</script>

@@ -1,0 +1,125 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Image from '@components/Image.astro';
+import TravelBody from '@components/TravelBody.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('travel-journal');
+  return entries.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+interface Props {
+  entry: CollectionEntry<'travel-journal'>;
+}
+
+const { entry } = Astro.props;
+const { title, location, year, hero_image, intro, body } = entry.data;
+
+// Lead paragraph: use the explicit `intro` field, otherwise lift the first
+// text block out of the body so it renders under the title in the header.
+let introText = intro;
+let bodyBlocks = body;
+if (!introText && body.length > 0 && body[0].type === 'text') {
+  introText = body[0].body;
+  bodyBlocks = body.slice(1);
+}
+// Split the lead into paragraphs (multi-paragraph intros render as a stack).
+const introParas = introText
+  ? introText.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
+  : [];
+---
+
+<BaseLayout title={`${title} ${year}`} description={introText} ogImage={hero_image}>
+  <article class="px-6 md:px-12 pt-16 md:pt-24 pb-24">
+    {/* Top-left back link — returns to the destinations index. */}
+    <nav class="travel-back">
+      <a href="/travel-journal" aria-label="Back to all destinations">
+        <span aria-hidden="true">←</span> All destinations
+      </a>
+    </nav>
+
+    {/* Header: destination title in Caveat, centered, with the dated lead
+        paragraph below. Same shape for every destination page. */}
+    <header class="travel-header">
+      <h1 class="travel-title">{location || title}</h1>
+      {introParas.length > 0 && (
+        <div class="travel-intro">
+          {introParas.map((p) => <p>{p}</p>)}
+        </div>
+      )}
+    </header>
+
+    {bodyBlocks.length > 0 && <TravelBody blocks={bodyBlocks} />}
+
+    <div class="mt-20 text-center">
+      <a href="/travel-journal" class="text-xs uppercase tracking-[0.2em] text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]">
+        ← All destinations
+      </a>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  /* Compact left-aligned back link sitting above the centered header. Same
+     minimal nav treatment as the bottom "All destinations" link, just
+     hoisted to the top. */
+  .travel-back {
+    margin-bottom: 32px;
+  }
+  .travel-back a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-fg-muted, #8a8682);
+    transition: color 0.2s ease;
+  }
+  .travel-back a:hover {
+    color: var(--color-fg, #f0ece4);
+  }
+  @media (min-width: 768px) {
+    .travel-back {
+      margin-bottom: 48px;
+    }
+  }
+
+  .travel-header {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 56px;
+  }
+  @media (min-width: 768px) {
+    .travel-header {
+      margin-bottom: 72px;
+    }
+  }
+
+  .travel-title {
+    font-family: 'Caveat', cursive;
+    font-weight: 600;
+    font-size: clamp(52px, 8vw, 92px);
+    line-height: 1;
+    color: var(--color-fg, #f0ece4);
+  }
+
+  .travel-intro {
+    margin-top: 22px;
+  }
+  .travel-intro p {
+    font-family: 'Caveat', cursive;
+    font-style: italic;
+    font-size: clamp(20px, 2.4vw, 30px);
+    line-height: 1.4;
+    color: var(--color-fg, #f0ece4);
+  }
+  .travel-intro p + p {
+    margin-top: 0.8em;
+  }
+</style>

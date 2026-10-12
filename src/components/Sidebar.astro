@@ -1,0 +1,188 @@
+---
+import Image from './Image.astro';
+import { getSiteSettings } from '@lib/site';
+import { flags } from '@lib/flags';
+
+const site = await getSiteSettings();
+
+const COPYRIGHT_START_YEAR = 2023;
+const buildYear = new Date().getFullYear();
+const copyrightInitial =
+  buildYear > COPYRIGHT_START_YEAR ? `${COPYRIGHT_START_YEAR}-${buildYear}` : `${COPYRIGHT_START_YEAR}`;
+
+const navItems = [
+  { label: 'Home',           href: '/',                icon: 'alien' },
+  { label: 'Portfolio',      href: '/portfolio',       icon: 'video' },
+  { label: 'Photography',    href: '/photography',     icon: 'camera' },
+  ...(flags.showTravelJournal
+    ? [{ label: 'Travel Journal', href: '/travel-journal', icon: 'book' } as const]
+    : []),
+  { label: 'Contact',        href: '/contact',         icon: 'send' },
+] as const;
+
+const socialIconKey = (label: string) => {
+  const k = label.toLowerCase();
+  if (k.includes('youtube')) return 'youtube';
+  if (k.includes('instagram')) return 'instagram';
+  if (k.includes('linkedin')) return 'linkedin';
+  if (k.includes('vimeo')) return 'vimeo';
+  return 'link';
+};
+
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/' ? path === '/' : path === href || path.startsWith(href + '/');
+---
+
+<aside
+  class="hidden md:flex fixed inset-y-0 left-0 w-64 lg:w-72 flex-col justify-between p-7 bg-[var(--color-bg-elev)] border-r hairline border-r-[var(--color-line)]"
+>
+  <div class="space-y-9">
+    {/* Avatar + name — horizontal, avatar on the left */}
+    <div class="flex items-center gap-3">
+      <Image
+        src={site.avatar}
+        alt={site.name}
+        class="h-11 w-11 rounded-lg object-cover shrink-0"
+      />
+      <div class="min-w-0">
+        <p class="text-sm font-medium leading-tight tracking-tight truncate">{site.name}</p>
+        <p class="text-[11px] text-[var(--color-fg-muted)] mt-1 leading-snug truncate">
+          {site.title}
+        </p>
+      </div>
+    </div>
+
+    {/* Nav */}
+    <nav>
+      <ul class="space-y-0.5">
+        {navItems.map(({ label, href, icon }) => (
+          <li>
+            <a
+              href={href}
+              class:list={[
+                'flex items-center gap-3 py-2 -mx-2 px-2 rounded-md text-sm transition-colors',
+                isActive(href)
+                  ? 'text-[var(--color-fg)] bg-[var(--color-bg-raised)]'
+                  : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg)] hover:bg-[var(--color-bg-raised)]/60',
+              ]}
+              aria-current={isActive(href) ? 'page' : undefined}
+            >
+              <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                {icon === 'alien' && (
+                  <>
+                    {/* Alien head: rounded crown tapering to a small chin */}
+                    <path d="M12 3c-4 0-7 2.7-7 6 0 5 3 8 7 12 4-4 7-7 7-12 0-3.3-3-6-7-6z" />
+                    {/* Almond eyes, outer edges higher */}
+                    <ellipse cx="9.5" cy="10.5" rx="1.3" ry="2.2" fill="currentColor" stroke="none" transform="rotate(-20 9.5 10.5)" />
+                    <ellipse cx="14.5" cy="10.5" rx="1.3" ry="2.2" fill="currentColor" stroke="none" transform="rotate(20 14.5 10.5)" />
+                  </>
+                )}
+                {icon === 'video' && (
+                  <>
+                    {/* Vintage film camera: two reels on top, boxy body, small lens */}
+                    <circle cx="8" cy="7" r="3" />
+                    <circle cx="8" cy="7" r="0.6" fill="currentColor" stroke="none" />
+                    <circle cx="16" cy="7" r="3" />
+                    <circle cx="16" cy="7" r="0.6" fill="currentColor" stroke="none" />
+                    <rect x="3" y="10" width="15" height="9" rx="1" />
+                    <rect x="18" y="13" width="4" height="3" />
+                  </>
+                )}
+                {icon === 'camera' && (
+                  <>
+                    <path d="M4 8h3l2-2h6l2 2h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+                    <circle cx="12" cy="13" r="3.5" />
+                  </>
+                )}
+                {icon === 'book' && (
+                  <>
+                    {/* Open journal — two pages spreading from a center spine */}
+                    <path d="M3 5c3 0 6 .5 9 2v13c-3-1.5-6-2-9-2z" />
+                    <path d="M21 5c-3 0-6 .5-9 2v13c3-1.5 6-2 9-2z" />
+                  </>
+                )}
+                {icon === 'send' && (
+                  <>
+                    <path d="M22 2L11 13" />
+                    <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+                  </>
+                )}
+              </svg>
+              <span>{label}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    {/* Socials */}
+    {site.socials.length > 0 && (
+      <div>
+        <p class="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-[var(--color-fg-dim)] mb-3 px-1">
+          Socials
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="6" y1="2" x2="6" y2="10" />
+            <polyline points="3,7 6,10 9,7" />
+          </svg>
+        </p>
+        <ul class="space-y-0.5">
+          {site.socials.map((s) => {
+            const key = socialIconKey(s.label);
+            return (
+              <li>
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex items-center gap-3 py-2 -mx-2 px-2 rounded-md text-sm text-[var(--color-fg-muted)] hover:text-[var(--color-fg)] hover:bg-[var(--color-bg-raised)]/60 transition-colors"
+                >
+                  <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    {key === 'youtube' && (
+                      <>
+                        <path d="M22.5 7.2c-.2-.9-.9-1.6-1.8-1.8C19 5 12 5 12 5s-7 0-8.7.4C2.4 5.6 1.7 6.3 1.5 7.2 1.1 8.9 1.1 12 1.1 12s0 3.1.4 4.8c.2.9.9 1.6 1.8 1.8C5 19 12 19 12 19s7 0 8.7-.4c.9-.2 1.6-.9 1.8-1.8.4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8z" />
+                        <polygon points="10,9 16,12 10,15" fill="currentColor" stroke="none" />
+                      </>
+                    )}
+                    {key === 'instagram' && (
+                      <>
+                        <rect x="3" y="3" width="18" height="18" rx="5" />
+                        <circle cx="12" cy="12" r="4" />
+                        <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" stroke="none" />
+                      </>
+                    )}
+                    {key === 'linkedin' && (
+                      <>
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <line x1="8" y1="10" x2="8" y2="17" />
+                        <circle cx="8" cy="7" r="0.7" fill="currentColor" stroke="none" />
+                        <path d="M12 17v-4.5a2 2 0 0 1 4 0V17" />
+                        <line x1="12" y1="10" x2="12" y2="17" />
+                      </>
+                    )}
+                    {key === 'vimeo' && (
+                      <path d="M22 7c-.5 3-3.5 7-6 9-1.5 1.2-2.5 1.5-3.5.5-1-1-1.5-3-2.5-6-1-3-1.5-3.5-2.5-2.5L5 9" />
+                    )}
+                    {key === 'link' && (
+                      <>
+                        <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 1 0-5.66-5.66l-1 1" />
+                        <path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 1 0 5.66 5.66l1-1" />
+                      </>
+                    )}
+                  </svg>
+                  <span>{s.label}</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    )}
+  </div>
+
+  {/* Footer */}
+  <div class="text-[10px] uppercase tracking-[0.18em] text-[var(--color-fg-dim)] leading-relaxed px-1">
+    <p>ChristianTaylh Media Ltd.</p>
+    <p class="js-copyright-year" data-start="2023">{copyrightInitial}</p>
+  </div>
+</aside>

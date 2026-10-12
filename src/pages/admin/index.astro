@@ -1,0 +1,17 @@
+---
+// Decap CMS admin shell. Loads its config from /admin/config.yml at runtime.
+// Kept entirely static — no Astro layout, no Tailwind — Decap mounts its own UI.
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Content Manager — Christian Taylhardat</title>
+    <meta name="theme-color" content="#0d0c0a" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <script src="https://unpkg.com/decap-cms@^3.5.0/dist/decap-cms.js" is:inline></script>
+  </body>
+</html>

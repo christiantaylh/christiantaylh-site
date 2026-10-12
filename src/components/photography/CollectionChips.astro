@@ -1,0 +1,143 @@
+---
+interface Props {
+  active?: string;
+}
+const { active = 'all' } = Astro.props;
+
+// Order matches the visual sequence in the screenshots: Sport / Landscape /
+// Calle en Cuadro / Aerials. Icons are simple line glyphs that read at chip
+// scale; tune the paths if the brand wants something more specific.
+const CHIPS = [
+  { slug: 'sport',           label: 'Sport',            icon: 'wave' },
+  { slug: 'calle-en-cuadro', label: 'Calle en Cuadro',  icon: 'walker' },
+  { slug: 'landscape',       label: 'Landscape',        icon: 'mountains' },
+  { slug: 'nature',          label: 'Nature',           icon: 'paw' },
+  { slug: 'aerials',         label: 'Aerials',          icon: 'wings' },
+];
+---
+
+<div class="collection-chips" role="tablist" aria-label="Filter photography by collection">
+  {CHIPS.map((c) => {
+    const isActive = active === c.slug;
+    return (
+      <button
+        type="button"
+        class="chip"
+        data-collection={c.slug}
+        data-active={isActive}
+        role="tab"
+        aria-selected={isActive}
+      >
+        <span class="chip-label">{c.label}</span>
+        <svg class="chip-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          {c.icon === 'wave' && (
+            /* Cresting swell */
+            <path d="M1 9c1-1.5 2-1.5 3 0s2 1.5 3 0 2-1.5 3 0 2 1.5 3 0 2-1.5 2-1.5" />
+          )}
+          {c.icon === 'mountains' && (
+            <>
+              {/* Two peaks + a small sun */}
+              <path d="M1 13l4.5-7 2.5 4 2-3 5 6z" />
+              <circle cx="11" cy="4" r="1.3" />
+            </>
+          )}
+          {c.icon === 'walker' && (
+            <>
+              {/* Walking person */}
+              <circle cx="9" cy="3" r="1.4" />
+              <path d="M9 5l-2 4 1.5 1.5L8 14" />
+              <path d="M7 9l-3 1" />
+              <path d="M9.5 10.5L12 12" />
+            </>
+          )}
+          {c.icon === 'paw' && (
+            <>
+              {/* Paw print — 4 toe pads + main palm pad */}
+              <ellipse cx="3.5" cy="5"  rx="1.1" ry="1.4" fill="currentColor" stroke="none" />
+              <ellipse cx="6.5" cy="3"  rx="1.1" ry="1.4" fill="currentColor" stroke="none" />
+              <ellipse cx="9.5" cy="3"  rx="1.1" ry="1.4" fill="currentColor" stroke="none" />
+              <ellipse cx="12.5" cy="5" rx="1.1" ry="1.4" fill="currentColor" stroke="none" />
+              <path d="M5 11c0-2 1.5-3 3-3s3 1 3 3-1.3 3-3 3-3-1-3-3z" fill="currentColor" stroke="none" />
+            </>
+          )}
+          {c.icon === 'wings' && (
+            /* Stylised wings / drone silhouette */
+            <>
+              <path d="M8 6c-2-2-5-2-6 0 1 2 4 2 6 0z" />
+              <path d="M8 6c2-2 5-2 6 0-1 2-4 2-6 0z" />
+              <line x1="8" y1="6" x2="8" y2="11" />
+              <circle cx="8" cy="11.5" r="0.8" fill="currentColor" stroke="none" />
+            </>
+          )}
+        </svg>
+      </button>
+    );
+  })}
+</div>
+
+<style>
+  .collection-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 24px 0 18px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    border: 1px solid var(--color-line, rgba(255, 255, 255, 0.18));
+    background: transparent;
+    color: var(--color-fg-muted, #9a978f);
+    font-family: var(--font-sans, ui-sans-serif, system-ui);
+    font-size: 15px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+
+  .chip:hover {
+    color: var(--color-fg, #f0ece4);
+    border-color: var(--color-fg-muted, #9a978f);
+  }
+
+  .chip[data-active='true'] {
+    background: var(--color-bg-raised, rgba(255, 255, 255, 0.06));
+    color: var(--color-fg, #f0ece4);
+    border-color: transparent;
+  }
+
+  .chip-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    /* Icon is hidden until the chip is active — matches the screenshot
+       where each pill only shows its icon when selected. */
+    display: none;
+  }
+
+  .chip[data-active='true'] .chip-icon {
+    display: inline-block;
+  }
+
+  /* Mobile: tighter spacing, horizontal scroll if needed */
+  @media (max-width: 767px) {
+    .collection-chips {
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
+      flex-wrap: nowrap;
+      padding-bottom: 4px;
+    }
+    .chip {
+      flex-shrink: 0;
+      scroll-snap-align: start;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+  }
+</style>

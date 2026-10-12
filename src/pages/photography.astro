@@ -1,0 +1,164 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import CollectionChips from '@components/photography/CollectionChips.astro';
+import MosaicGrid from '@components/photography/MosaicGrid.astro';
+import PhotoCell from '@components/photography/PhotoCell.astro';
+import Lightbox from '@components/photography/Lightbox.astro';
+
+// Photos are filtered by collection (inferred from the image's subfolder under
+// public/uploads/photography/<collection>/). Ordered date desc.
+const entries = await getCollection('photography');
+const sorted = entries.slice().sort((a, b) => {
+  const ad = a.data.date ?? '';
+  const bd = b.data.date ?? '';
+  return bd.localeCompare(ad);
+});
+
+const total = sorted.length;
+---
+
+<BaseLayout title="Stills" description="From my lens to your eyes.">
+  <section class="px-6 md:px-12 pt-16 md:pt-20 pb-20">
+    <header class="mb-2 max-w-2xl">
+      <p class="photo-eyebrow">Stills</p>
+      <h1 class="photo-heading">From my lens to your eyes</h1>
+    </header>
+
+    {total === 0 ? (
+      <p class="text-sm text-[var(--color-fg-muted)] mt-8">
+        No photos yet. Add them via <a href="/admin" class="underline">/admin</a>.
+      </p>
+    ) : (
+      <>
+        <CollectionChips active="all" />
+        <MosaicGrid active="all">
+          {sorted.map((entry, i) => (
+            <PhotoCell entry={entry} index={i} />
+          ))}
+        </MosaicGrid>
+        <Lightbox />
+      </>
+    )}
+  </section>
+</BaseLayout>
+
+<script>
+  // Filter interaction: clicking a chip filters the grid by collection.
+  // CSS handles the visibility (PhotoCell.astro :global block). URL syncs
+  // to /photography?c=<collection>, restored on load and on back/forward.
+  // No ALL pill — clicking the active chip again returns to ALL.
+  const grid = document.querySelector<HTMLElement>('.mosaic-grid');
+  const chips = document.querySelectorAll<HTMLButtonElement>('.collection-chips .chip');
+
+  function setActive(collection: string) {
+    if (!grid) return;
+    grid.setAttribute('data-active-collection', collection);
+    chips.forEach((c) => {
+      c.setAttribute('data-active', String((c.dataset.collection ?? '') === collection));
+    });
+  }
+
+  function syncUrl(collection: string) {
+    const url = new URL(window.location.href);
+    if (collection === 'all') url.searchParams.delete('c');
+    else url.searchParams.set('c', collection);
+    history.pushState({ collection }, '', url);
+  }
+
+  const initial = new URL(window.location.href).searchParams.get('c') ?? 'all';
+  if (initial !== 'all') setActive(initial);
+
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const target = chip.dataset.collection ?? 'all';
+      const current = grid?.getAttribute('data-active-collection') ?? 'all';
+      const next = current === target ? 'all' : target;
+      setActive(next);
+      syncUrl(next);
+    });
+  });
+
+  window.addEventListener('popstate', () => {
+    const collection = new URL(window.location.href).searchParams.get('c') ?? 'all';
+    setActive(collection);
+  });
+
+  // ─── Lightbox wiring ──────────────────────────────────────────────────
+  const dialog = document.getElementById('photo-lightbox') as HTMLDialogElement | null;
+  const lbImg = document.getElementById('photo-lightbox-img') as HTMLImageElement | null;
+  const lbCaption = document.getElementById('photo-lightbox-caption');
+  const lbClose = document.getElementById('photo-lightbox-close');
+  const lbPrev = document.getElementById('photo-lightbox-prev');
+  const lbNext = document.getElementById('photo-lightbox-next');
+  const allCells = Array.from(document.querySelectorAll<HTMLElement>('.photo-cell'));
+
+  // The set we navigate through is the cells currently visible in the layout
+  // (so filters scope the lightbox). Refreshed each open in case the filter
+  // changed since the page loaded.
+  let visible: HTMLElement[] = [];
+  let cursor = 0;
+
+  function visibleCells(): HTMLElement[] {
+    return allCells.filter((c) => c.offsetParent !== null);
+  }
+
+  function showAt(i: number) {
+    if (!dialog || !lbImg || !lbCaption || visible.length === 0) return;
+    cursor = (i + visible.length) % visible.length;
+    const cell = visible[cursor];
+    lbImg.src = cell.dataset.photoSrc ?? '';
+    lbImg.alt = cell.dataset.photoAlt ?? '';
+    lbCaption.textContent = cell.dataset.photoCaption ?? '';
+  }
+
+  allCells.forEach((cell) => {
+    cell.addEventListener('click', () => {
+      if (!dialog) return;
+      visible = visibleCells();
+      const idx = visible.indexOf(cell);
+      if (idx < 0) return;
+      showAt(idx);
+      dialog.showModal();
+    });
+  });
+
+  lbClose?.addEventListener('click', () => dialog?.close());
+  lbPrev?.addEventListener('click', () => showAt(cursor - 1));
+  lbNext?.addEventListener('click', () => showAt(cursor + 1));
+
+  // Click-outside-image → close
+  dialog?.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!dialog?.open) return;
+    if (e.key === 'ArrowLeft') showAt(cursor - 1);
+    if (e.key === 'ArrowRight') showAt(cursor + 1);
+  });
+</script>
+
+<style>
+  .photo-eyebrow {
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: #6a6a64;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+  }
+  .photo-heading {
+    font-family: var(--font-display, var(--font-serif, serif));
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  @media (min-width: 768px) {
+    .photo-heading {
+      font-size: 42px;
+    }
+  }
+</style>

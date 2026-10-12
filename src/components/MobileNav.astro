@@ -1,0 +1,116 @@
+---
+import Image from './Image.astro';
+import { getSiteSettings } from '@lib/site';
+import { flags } from '@lib/flags';
+
+const site = await getSiteSettings();
+
+const COPYRIGHT_START_YEAR = 2023;
+const buildYear = new Date().getFullYear();
+const copyrightInitial =
+  buildYear > COPYRIGHT_START_YEAR ? `${COPYRIGHT_START_YEAR}-${buildYear}` : `${COPYRIGHT_START_YEAR}`;
+
+const navItems = [
+  { label: 'Home', href: '/' },
+  { label: 'Portfolio', href: '/portfolio' },
+  { label: 'Photography', href: '/photography' },
+  ...(flags.showTravelJournal
+    ? [{ label: 'Travel Journal', href: '/travel-journal' }]
+    : []),
+  { label: 'Contact', href: '/contact' },
+];
+---
+
+<header
+  class="md:hidden fixed inset-x-0 top-0 z-40 flex items-center justify-between px-5 py-4 bg-[var(--color-bg)]/85 backdrop-blur border-b hairline border-b-[var(--color-line)]"
+>
+  <a href="/" class="flex items-center gap-3">
+    <Image src={site.avatar} alt={site.name} class="h-8 w-8 rounded-full object-cover" />
+    <span class="font-display text-base leading-none">{site.name}</span>
+  </a>
+
+  <button
+    id="mobile-nav-toggle"
+    type="button"
+    aria-label="Open navigation"
+    aria-expanded="false"
+    aria-controls="mobile-nav-overlay"
+    class="p-2 -mr-2 text-[var(--color-fg-muted)]"
+  >
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.25">
+      <line x1="3" y1="7" x2="19" y2="7" />
+      <line x1="3" y1="15" x2="19" y2="15" />
+    </svg>
+  </button>
+</header>
+
+<div
+  id="mobile-nav-overlay"
+  class="md:hidden fixed inset-0 z-50 hidden flex-col bg-[var(--color-bg)] p-6"
+  aria-hidden="true"
+>
+  <div class="flex items-center justify-between mb-12">
+    <span class="font-display text-base">{site.name}</span>
+    <button
+      id="mobile-nav-close"
+      type="button"
+      aria-label="Close navigation"
+      class="p-2 -mr-2 text-[var(--color-fg-muted)]"
+    >
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.25">
+        <line x1="5" y1="5" x2="17" y2="17" />
+        <line x1="17" y1="5" x2="5" y2="17" />
+      </svg>
+    </button>
+  </div>
+
+  <nav class="flex-1">
+    <ul class="space-y-5">
+      {navItems.map(({ label, href }) => (
+        <li>
+          <a href={href} class="font-display text-3xl">{label}</a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+
+  <div class="space-y-4 mt-8">
+    {site.socials.length > 0 && (
+      <ul class="flex gap-5 text-sm text-[var(--color-fg-muted)]">
+        {site.socials.map((s) => (
+          <li><a href={s.url} target="_blank" rel="noopener noreferrer">{s.label}</a></li>
+        ))}
+      </ul>
+    )}
+    <p class="text-[10px] uppercase tracking-[0.18em] text-[var(--color-fg-dim)]">
+      ChristianTaylh Media Ltd. · <span class="js-copyright-year" data-start="2023">{copyrightInitial}</span>
+    </p>
+  </div>
+</div>
+
+<script>
+  const toggle = document.getElementById('mobile-nav-toggle');
+  const close = document.getElementById('mobile-nav-close');
+  const overlay = document.getElementById('mobile-nav-overlay');
+
+  const open = () => {
+    overlay?.classList.remove('hidden');
+    overlay?.classList.add('flex');
+    overlay?.setAttribute('aria-hidden', 'false');
+    toggle?.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  };
+  const shut = () => {
+    overlay?.classList.add('hidden');
+    overlay?.classList.remove('flex');
+    overlay?.setAttribute('aria-hidden', 'true');
+    toggle?.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  };
+
+  toggle?.addEventListener('click', open);
+  close?.addEventListener('click', shut);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') shut();
+  });
+</script>

@@ -1,0 +1,280 @@
+---
+import Image from './Image.astro';
+
+type Block =
+  | { type: 'image'; src: string; alt: string; caption?: string; label?: string; width?: 'full' | 'half' | 'wide' | 'narrow'; cols?: string }
+  | { type: 'text'; body: string; align?: 'left' | 'right' };
+
+interface Props {
+  blocks: Block[];
+}
+
+const { blocks } = Astro.props;
+
+// Layout units:
+//   heading  — short place label, left-aligned above the images it introduces
+//   pair     — long descriptive text beside the image that follows (image left, text right)
+//   gallery  — a run of consecutive images, laid out 2-up (lone/odd image goes full-width)
+//   text     — a long descriptive paragraph with no adjacent image (centered)
+type Img = { src: string; alt: string; label?: string; width?: 'full' | 'half' | 'wide' | 'narrow'; cols?: string };
+// `cols` is an optional grid-template-columns override for asymmetric pairs
+// (e.g. wide + narrow → '2fr 1fr'). Absent means a 1:1 split.
+type Row = { full: boolean; imgs: Img[]; cols?: string };
+type Unit =
+  | { kind: 'heading'; text: string }
+  | { kind: 'pair'; text: string; src: string; alt: string; textLeft: boolean }
+  | { kind: 'gallery'; rows: Row[] }
+  | { kind: 'text'; paras: string[] };
+
+const splitParas = (s: string) => s.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+const LABEL_MAX = 50;
+const isLabel = (s: string) => s.trim().length <= LABEL_MAX;
+// Image number from filename (e.g. ".../09.avif" → "09") — shown as a hover
+// tooltip so specific photos are easy to identify when tuning layout.
+const imgNum = (src: string) => (src.match(/(\d+)\.[a-z]+$/i) || [])[1] || '';
+
+// Lay a run of images: lead with one full-width image, then pair the rest
+// 2-up. A lone trailing image stays full-width; a run of exactly two pairs.
+//   1 → full
+//   2 → pair
+//   3 → full, pair
+//   4 → full, pair, full
+//   5 → full, pair, pair
+//   6 → full, pair, pair, full
+function galleryRows(images: Img[]): Row[] {
+  const rows: Row[] = [];
+  if (images.length === 0) return rows;
+  if (images.length === 2) {
+    rows.push({ full: false, imgs: [images[0], images[1]] });
+    return rows;
+  }
+  rows.push({ full: true, imgs: [images[0]] });
+  let i = 1;
+  while (i < images.length) {
+    if (i + 1 < images.length) {
+      rows.push({ full: false, imgs: [images[i], images[i + 1]] });
+      i += 2;
+    } else {
+      rows.push({ full: true, imgs: [images[i]] });
+      i += 1;
+    }
+  }
+  return rows;
+}
+
+// When images carry width hints (from the source row grouping), honor them
+// exactly: consecutive 'half' images pair side-by-side, everything else is
+// full-width. Falls back to galleryRows when no hints are present.
+function widthRows(images: Img[]): Row[] {
+  const rows: Row[] = [];
+  let i = 0;
+  while (i < images.length) {
+    const a = images[i];
+    const b = i + 1 < images.length ? images[i + 1] : null;
+    if (a.width === 'half' && b && b.width === 'half') {
+      rows.push({ full: false, imgs: [a, b] });
+      i += 2;
+    } else if (a.width === 'wide' && b && b.width === 'narrow') {
+      rows.push({ full: false, imgs: [a, b], cols: a.cols || b.cols || '2fr 1fr' });
+      i += 2;
+    } else if (a.width === 'narrow' && b && b.width === 'wide') {
+      rows.push({ full: false, imgs: [a, b], cols: a.cols || b.cols || '1fr 2fr' });
+      i += 2;
+    } else {
+      rows.push({ full: true, imgs: [a] });
+      i += 1;
+    }
+  }
+  return rows;
+}
+
+const units: Unit[] = [];
+let i = 0;
+while (i < blocks.length) {
+  const b = blocks[i];
+  const next = blocks[i + 1];
+  if (b.type === 'text' && isLabel(b.body)) {
+    units.push({ kind: 'heading', text: b.body.trim() });
+    i += 1;
+  } else if (b.type === 'text' && next && next.type === 'image') {
+    units.push({ kind: 'pair', text: b.body, src: next.src, alt: next.alt, textLeft: b.align === 'left' });
+    i += 2;
+  } else if (b.type === 'text') {
+    units.push({ kind: 'text', paras: splitParas(b.body) });
+    i += 1;
+  } else {
+    // Collect a run of consecutive images.
+    const images: Img[] = [];
+    while (i < blocks.length && blocks[i].type === 'image') {
+      const img = blocks[i] as Extract<Block, { type: 'image' }>;
+      images.push({ src: img.src, alt: img.alt, width: img.width, label: img.label, cols: img.cols });
+      i += 1;
+    }
+    const hasHints = images.some((im) => im.width);
+    units.push({ kind: 'gallery', rows: hasHints ? widthRows(images) : galleryRows(images) });
+  }
+}
+---
+
+<div class="travel-body">
+  {units.map((u) =>
+    u.kind === 'heading' ? (
+      <p class="travel-heading">{u.text}</p>
+    ) : u.kind === 'pair' ? (
+      <div class="travel-pair" class:list={[u.textLeft && 'pair-text-left']}>
+        <figure class="travel-figure">
+          <Image src={u.src} alt={u.alt} class="travel-photo" />
+        </figure>
+        <div class="travel-text pair-text">
+          {splitParas(u.text).map((p) => <p>{p}</p>)}
+        </div>
+      </div>
+    ) : u.kind === 'gallery' ? (
+      <div class="travel-gallery">
+        {u.rows.map((row) =>
+          row.full ? (
+            <figure class="travel-figure" title={imgNum(row.imgs[0].src)}>
+              {row.imgs[0].label && <p class="travel-image-label">{row.imgs[0].label}</p>}
+              <Image src={row.imgs[0].src} alt={row.imgs[0].alt} class="travel-photo" />
+            </figure>
+          ) : (
+            <div class="gallery-pair" style={row.cols ? `grid-template-columns: ${row.cols}` : undefined}>
+              {row.imgs.some((img) => img.label) &&
+                row.imgs.map((img) => (
+                  <p class="travel-image-label gallery-label" set:html={img.label || '&nbsp;'} />
+                ))}
+              {row.imgs.map((img) => (
+                <figure class="travel-figure" title={imgNum(img.src)}>
+                  <Image src={img.src} alt={img.alt} class="travel-photo" />
+                </figure>
+              ))}
+            </div>
+          )
+        )}
+      </div>
+    ) : (
+      <div class="travel-text">
+        {u.paras.map((p) => <p>{p}</p>)}
+      </div>
+    )
+  )}
+</div>
+
+<style>
+  /* Body gap = gallery's internal gap (12px) so every image-to-image
+     transition feels uniform, whether the images are within one gallery or
+     across gallery → pair → gallery boundaries. Section breaks come from
+     the heading's extra top margin. */
+  .travel-body {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Section label — left-aligned to the image's left edge. Extra top margin
+     gives breathing room from the previous section; bottom relies on the
+     12px body gap to sit tight to the image group it labels. */
+  .travel-heading {
+    font-family: 'Caveat', cursive;
+    font-style: italic;
+    font-size: clamp(24px, 2.8vw, 36px);
+    line-height: 1.2;
+    color: var(--color-fg, #f0ece4);
+    text-align: left;
+    margin: 0;
+  }
+
+  /* Side-by-side: image left, text right, vertically centered. */
+  .travel-pair {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 40px;
+    align-items: center;
+  }
+  /* Flip: text on the left, image on the right. */
+  .travel-pair.pair-text-left {
+    grid-template-columns: 2fr 3fr;
+  }
+  .travel-pair.pair-text-left .travel-figure {
+    order: 2;
+  }
+  .travel-pair.pair-text-left .pair-text {
+    order: 1;
+  }
+  @media (max-width: 767px) {
+    .travel-pair,
+    .travel-pair.pair-text-left {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+  }
+
+  /* Image run: single full-width, then two side-by-side, repeating. */
+  .travel-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .gallery-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  /* When a paired row has labels, they sit in row 1 (column-aligned to
+     their image). align-items: end keeps short/empty labels bottom-flush so
+     each label hugs the image below it, and the images themselves still
+     start at the same y. */
+  .gallery-pair .gallery-label {
+    align-self: end;
+    margin: 0;
+  }
+  @media (max-width: 767px) {
+    .gallery-pair {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .travel-text {
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .pair-text {
+    margin: 0;
+  }
+  .travel-text p {
+    font-family: 'Caveat', cursive;
+    font-style: italic;
+    font-size: clamp(20px, 2.2vw, 28px);
+    line-height: 1.4;
+    color: var(--color-fg, #f0ece4);
+  }
+  .travel-text p + p {
+    margin-top: 0.6em;
+  }
+
+  .travel-figure {
+    margin: 0;
+  }
+  .travel-photo {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 2px;
+  }
+  /* Per-image label rendered above its image (e.g. a timestamp scoped to
+     one photo). Matches the section heading style but with less top margin
+     so it sits tight to the image it labels. */
+  .travel-image-label {
+    font-family: 'Caveat', cursive;
+    font-style: italic;
+    font-size: clamp(24px, 2.8vw, 36px);
+    line-height: 1.2;
+    color: var(--color-fg, #f0ece4);
+    text-align: left;
+    margin: 0 0 8px;
+  }
+</style>
